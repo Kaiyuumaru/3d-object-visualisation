@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Kasatria Assignment: Homepage</title>
+        <link rel="stylesheet" href="/css/homepage.css">
+        <script src="/js/auth.js"></script>
+        <script async src="https://accounts.google.com/gsi/client"></script>
+        <script src="/js/script.js"></script>
+        <script async src="/js/sheetData.js"></script>
+        <script type="module" src="/js/three.js"></script>
+    </head>
+    <body>
+        <div id="threeJS"></div>
+        <div id="format">
+            <button id="tableFormat">TABLE</button>
+            <button id="gridFormat">GRID</button>
+            <button id="helixFormat">HELIX</button>
+            <button id="sphereFormat">SPHERE</button>
+        </div>
+        <div id="networthLegend">
+            <div class="legend-labels">
+                <span>LOW (<$100k)</span>
+                <span>NET WORTH VALUE</span>
+                <span>HIGH (>$200k)</span>
+            </div>
+            <div class="legend-bar"></div>
+        </div>
+    </body>
+    <script>
+        sessionStorage.removeItem("loggedIn");
+    </script>
+</html>
