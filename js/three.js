@@ -202,6 +202,132 @@ elements.forEach(function(data, index){
     targets.sphere.push(target);
 });
 
+//TETRAHEDRON-FORMAT OBJECTS--------------------------
+//TETRAHEDRON-FORMAT OBJECTS--------------------------
+targets.tetrahedron = [];
+const tetraSize = 1100;
+
+const tetraVertices = [
+    new THREE.Vector3(1, 1, 1).normalize().multiplyScalar(tetraSize),
+    new THREE.Vector3(1, -1, -1).normalize().multiplyScalar(tetraSize),
+    new THREE.Vector3(-1, 1, -1).normalize().multiplyScalar(tetraSize),
+    new THREE.Vector3(-1, -1, 1).normalize().multiplyScalar(tetraSize)
+];
+
+const tetraFaces = [
+    [0, 1, 2],
+    [0, 3, 1],
+    [0, 2, 3],
+    [1, 3, 2]
+];
+
+const cardsPerFace = Math.ceil(elements.length / 4);
+
+// Generate many evenly spaced candidate points on one triangle
+function generateTriangleCandidates(A, B, C, subdivisions){
+    const candidates = [];
+    for(let row = 0; row <= subdivisions; row++){
+        for(let column = 0; column <= subdivisions - row; column++){
+            const u = row / subdivisions;
+            const v = column / subdivisions;
+            const w = 1 - u - v;
+
+            const position = new THREE.Vector3().addScaledVector(A, u).addScaledVector(B, v).addScaledVector(C, w);
+            candidates.push(position);
+        }
+    }
+
+    return candidates;
+}
+
+// Choose points that are as far apart as possible
+function selectEvenlySpacedPoints(candidates, amount) {
+    const selected = [];
+    const center = candidates.reduce((sum, point) => sum.add(point),new THREE.Vector3()).divideScalar(candidates.length);
+
+    let firstPoint = candidates[0];
+    let shortestDistance = Infinity;
+
+    candidates.forEach(function(point){
+        const distance = point.distanceToSquared(center);
+
+        if(distance < shortestDistance){
+            shortestDistance = distance;
+            firstPoint = point;
+        }
+    });
+
+    selected.push(firstPoint);
+
+    while(selected.length < amount){
+        let bestPoint = null;
+        let bestDistance = -Infinity;
+
+        candidates.forEach(function(candidate){
+
+            if(selected.includes(candidate)){
+                return;
+            }
+
+            let nearestSelectedDistance = Infinity;
+            selected.forEach(function(selectedPoint){
+                const distance =candidate.distanceToSquared(selectedPoint);
+
+                if(distance < nearestSelectedDistance){
+                    nearestSelectedDistance = distance;
+                }
+            });
+
+            if(nearestSelectedDistance > bestDistance){
+                bestDistance = nearestSelectedDistance;
+                bestPoint = candidate;
+            }
+        });
+
+        if(!bestPoint){
+            break;
+        }
+
+        selected.push(bestPoint);
+    }
+
+    return selected;
+}
+
+tetraFaces.forEach(function(face, faceIndex){
+    const A = tetraVertices[face[0]];
+    const B = tetraVertices[face[1]];
+    const C = tetraVertices[face[2]];
+
+    const AB = new THREE.Vector3().subVectors(B, A);
+    const AC = new THREE.Vector3().subVectors(C, A);
+    const normal = new THREE.Vector3().crossVectors(AB, AC).normalize();
+    const faceCenter = new THREE.Vector3().add(A).add(B).add(C).divideScalar(3);
+
+    if(faceCenter.dot(normal) < 0){
+        normal.negate();
+    }
+
+    const candidates = generateTriangleCandidates(A, B, C, 18);
+
+    const positions = selectEvenlySpacedPoints(candidates,cardsPerFace);
+    positions.forEach(function(position, localIndex){
+
+        const index = faceIndex * cardsPerFace + localIndex;
+
+        if(index >= elements.length) {
+            return;
+        }
+
+        const target = new THREE.Object3D();
+        target.position.copy(position);
+        const lookTarget = position.clone().add(normal);
+        target.lookAt(lookTarget);
+        targets.tetrahedron.push(target);
+    });
+});
+
+//ANIMATION LOOP -------------------------------------
 function transform(targetsArray, duration){
     tweenGroup.removeAll();
 
@@ -226,7 +352,6 @@ function transform(targetsArray, duration){
     }
 }
 
-//ANIMATION LOOP -------------------------------------
 function animate(time){
     requestAnimationFrame(animate);
 
@@ -241,6 +366,7 @@ document.getElementById("tableFormat").addEventListener("click", function(){tran
 document.getElementById("gridFormat").addEventListener("click", function(){transform(targets.grid, 2000)});
 document.getElementById("helixFormat").addEventListener("click", function(){transform(targets.helix, 2000)});
 document.getElementById("sphereFormat").addEventListener("click", function(){transform(targets.sphere, 2000)});
+document.getElementById("tetrahedronFormat").addEventListener("click", function(){transform(targets.tetrahedron, 2000)});
 
 //RESPONSIVE ---------------------------------------
 window.addEventListener("resize", function(){
